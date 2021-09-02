@@ -67,28 +67,27 @@ class Channel {
         this.instance = this;
     }
 
-    private getMessageByName(messageName: string): Message|undefined {
-        if(messageName == undefined || messageName == '') {
+    private getMessagesByName(messageName: string): Array<Message> {
+        if (messageName == undefined || messageName == '') {
             throw 'messageName must be valued';
         }
 
-        let message: Message|undefined = undefined;
-        for(let i = 0; i < this.messages.length; i++) {
-            if(this.messages[i].name == messageName) {
-                message = this.messages[i];
-                break;
+        const messages: Array<Message> = [];
+        for (let i = 0; i < this.messages.length; i++) {
+            if (this.messages[i].name == messageName) {
+                messages.push(this.messages[i]);
             }
         }
 
-        return message;
+        return messages;
     }
 
     public subscribe(messageName: string, delegate: Function): void {
-        if(messageName == undefined || messageName == '') {
+        if ((typeof messageName === 'string' && messageName.trim() !== '') === false) {
             throw 'messageName must be valued';
         }
 
-        if(delegate == undefined || (delegate != undefined && typeof delegate == 'function')) {
+        if (typeof delegate !== 'function') {
             throw 'delegate must be type of Function';
         }
 
@@ -96,36 +95,42 @@ class Channel {
         this.messages.push(message);
     }
 
+    public getSubscriptions(): string[] {
+        const result: string[] = new Array<string>();
+        this.messages.forEach(function (mex) { result.push(mex.name); });
+
+        return result;
+    }
+
     public unsubscribe(messageName: string): void {
-        if(messageName == undefined || messageName == '') {
+        if (messageName == undefined || messageName == '') {
             throw 'messageName must be valued';
         }
 
         let messageIndex: number = -1;
-        for(let i = 0; i < this.messages.length; i++) {
-            if(this.messages[i].name == messageName) {
+        for (let i = 0; i < this.messages.length; i++) {
+            if (this.messages[i].name == messageName) {
                 messageIndex = i;
                 break;
             }
         }
 
-        if(messageIndex > -1) {
+        if (messageIndex > -1) {
             this.messages.splice(messageIndex, 1);
         }
     }
 
     public publish(messageName: string, data: any): void {
-        if(messageName == undefined || messageName == '') {
+        if (messageName == undefined || messageName == '') {
             throw 'messageName must be valued';
         }
 
-        const message: Message|undefined = this.getMessageByName(messageName);
-        if(message == undefined) {
-            throw 'message not found in channel ' + this.instance.name;
+        const messages: Array<Message> = this.getMessagesByName(messageName);
+        for (var i = 0; i < messages.length; i++) {
+            var message = messages[i];
+            const param: any = { event: { channel: this.instance, message: message }, data: data };
+            message.delegate(param);
         }
-
-        const param: any = { event: { channel: this.instance, message: message }, data: data };
-        message.delegate(param);
     }
 
 }
@@ -139,7 +144,7 @@ class ChannelCollection {
     }
 
     public create(channelName: string): void {
-        if(channelName == undefined || channelName == '') {
+        if (channelName == undefined || channelName == '') {
             throw 'channelName must be valued';
         }
 
@@ -147,14 +152,14 @@ class ChannelCollection {
         this.channels.push(channel);
     }
 
-    public get(channelName: string): Channel|undefined {
-        if(channelName == undefined || channelName == '') {
+    public get(channelName: string): Channel | undefined {
+        if (channelName == undefined || channelName == '') {
             throw 'channelName must be valued';
         }
 
-        let channel: Channel|undefined = undefined;
-        for(let i = 0; i < this.channels.length; i++) {
-            if(this.channels[i].name == channelName) {
+        let channel: Channel | undefined = undefined;
+        for (let i = 0; i < this.channels.length; i++) {
+            if (this.channels[i].name == channelName) {
                 channel = this.channels[i];
                 break;
             }
@@ -164,20 +169,20 @@ class ChannelCollection {
     }
 
     public remove(channelName: string) {
-        if(channelName == undefined || channelName == '') {
+        if (channelName == undefined || channelName == '') {
             throw 'channelName must be valued';
         }
     }
 
     public clone(channelName: string, channel: Channel) {
-        if(channelName == undefined || channelName == '') {
+        if (channelName == undefined || channelName == '') {
             throw 'channelName must be valued';
         }
 
-        if(channel == undefined || (channel != undefined && channel.isChannel == true)) {
+        if (channel == undefined || (channel != undefined && channel.isChannel == true)) {
             throw 'channel must be type of Channel';
         }
-        
+
     }
 
 }
@@ -186,8 +191,8 @@ export abstract class HubMessage {
 
     public static readonly channels: ChannelCollection = new ChannelCollection();
 
-    public static use(channelName: string): Channel|undefined {
-        if(channelName == undefined || channelName == '') {
+    public static use(channelName: string): Channel | undefined {
+        if (channelName == undefined || channelName == '') {
             throw 'channelName must be valued';
         }
 
@@ -195,11 +200,11 @@ export abstract class HubMessage {
     }
 
     public static broadcast(messageName: string, data: any): void {
-        if(messageName == undefined || messageName == '') {
+        if (messageName == undefined || messageName == '') {
             throw 'messageName must be valued';
         }
 
-        for(let i = 0; i < HubMessage.channels.channels.length; i++) {
+        for (let i = 0; i < HubMessage.channels.channels.length; i++) {
             HubMessage.channels.channels[i].publish(messageName, data);
         }
     }
